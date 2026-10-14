@@ -10,6 +10,7 @@
     "predev": "node scripts/write-android-template.mjs",
     "prebuild": "node scripts/write-android-template.mjs",
     "android:server": "node server/android-build.mjs",
+    "android:template-apk": "node scripts/build-template-apk.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

@@ -5,6 +5,8 @@ import { androidAssetName } from '../src/lib/androidTheme.js';
 import { bubblePatchBounds } from '../src/lib/ninePatch.js';
 import { CELL01R, CELL02R, CELL01S, CELL02S, SLOTS, BG_SLOTS, BUBBLE_SLOTS } from '../src/constants/themeSpec.js';
 import { validatedImages, createBuildServer } from '../server/android-build.mjs';
+import { readFileSync } from 'node:fs';
+import { buildApk, getSigningKey, readZip, THEME_IMAGES } from '../src/lib/apk.js';
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
 async function archive(extra = {}) {
@@ -67,4 +69,22 @@ test('APK endpoint returns an APK, validates origin/type, and releases failed jo
     assert.equal(response.headers.get('Content-Type'),'application/vnd.android.package-archive');
     assert.equal(await response.text(),'APK fixture');
   } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('browser APK swaps theme images, aligns stored files, and adds a v2 signature', async () => {
+  const template = new Uint8Array(readFileSync(new URL('../public/theme-template.apk', import.meta.url)));
+  const paths = JSON.parse(readFileSync(new URL('../public/theme-template.json', import.meta.url), 'utf8'));
+  assert.deepEqual(Object.keys(paths).sort(), THEME_IMAGES.map(n => n.replace(/\.9$/, '')).sort());
+  const images = new Map([
+    ['theme_icon', { png: new Uint8Array(png) }],
+    ['theme_chatroom_bubble_me_01_image', { png: new Uint8Array(png), patch: { stretch: { x: 0, y: 0 }, content: { left: 0, top: 0, right: 1, bottom: 1 } } }],
+  ]);
+  const apk = await buildApk(template, paths, images, await getSigningKey(null));
+  const entries = readZip(apk);
+  assert.deepEqual([...entries.find(e => e.name === paths.theme_icon).data], [...png]);
+  const bubble = Buffer.from(entries.find(e => e.name === paths.theme_chatroom_bubble_me_01_image).data);
+  assert.equal(bubble.toString('ascii', 37, 41), 'npTc');
+  for (const e of entries) if (e.method === 0) assert.equal(e.data.byteOffset % 4, 0, e.name);
+  assert.ok(Buffer.from(apk).includes('APK Sig Block 42'));
+  await assert.rejects(buildApk(template, paths, new Map([['nope', { png }]]), null), /없는 이미지/);
 });

@@ -2,7 +2,7 @@
 
 사진 두 장으로 기존 캐릭터 말풍선을 만드는 React + Vite 앱입니다.
 
-- Android Studio 프로젝트 ZIP 생성. APK 빌드 서버를 연결하면 APK 다운로드.
+- 서버 없이 브라우저에서 바로 설치 가능한 테마 APK(`mytheme.apk`)를 만들어 다운로드합니다.
 - 기존처럼 캐릭터 두 장으로 말풍선과 잠금 비밀번호 이미지를 만듭니다.
 - 채팅방 배경 사진 한 장을 직접 업로드 / 삭제합니다.
 - 배경에는 누끼를 적용하지 않고 비율을 유지해 중앙 기준으로 채웁니다.
@@ -21,16 +21,25 @@ npm test
 npm run build
 ```
 
-## 서버 없이 갤럭시 테마 만들기
+## 서버 없이 APK 만들기
 
-기존 화면처럼 캐릭터 두 장과 선택 배경 사진을 넣어 생성합니다.
-`mytheme-android.zip` 압축을 풀고 Android Studio로 열어 APK를 빌드합니다.
-프로젝트 ZIP 안에도 한국어 사용 설명서가 들어 있습니다.
-JDK 17, Android SDK Platform 35, Build Tools 35.0.0이 필요합니다.
-처음 빌드할 때 Gradle과 Android 의존성 다운로드를 위한 인터넷 연결이 필요합니다.
-ZIP은 설치 파일이 아니므로 카카오톡에 직접 적용할 수 없습니다.
+`public/theme-template.apk`는 이미지만 비어 있는 테마 APK입니다.
+생성하기를 누르면 브라우저가 이 APK의 이미지를 캐릭터 이미지로 바꿔 끼우고,
+말풍선은 9-patch로 컴파일한 뒤 APK Signature Scheme v2로 서명합니다 (`src/lib/apk.js`).
 
-## APK 다운로드 서버 연결
+- 서명 키는 브라우저마다 처음 한 번 만들어 저장합니다. 같은 브라우저로 다시 만든 테마는 기존 테마 위에 덮어 설치됩니다.
+- 다른 브라우저/기기에서 만든 테마는 서명이 달라서, 이미 설치된 테마를 지운 뒤 설치해야 합니다.
+- 갤럭시에서 APK를 설치하려면 브라우저의 ‘출처를 알 수 없는 앱 설치’를 허용해야 합니다.
+
+`android-template`을 바꿨다면 템플릿 APK를 다시 빌드하세요. JDK 17과 Android SDK가 필요합니다.
+
+```bash
+ANDROID_HOME=~/Library/Android/sdk npm run android:template-apk
+```
+
+## (선택) APK 빌드 서버 연결
+
+서버 주소를 설정하면 브라우저 대신 Gradle 서버에서 APK를 빌드합니다.
 
 ### 로컬 개발
 
@@ -44,7 +53,7 @@ npm run android:server
 다른 터미널에서 `npm run dev`를 실행합니다.
 Vite를 이미 실행 중이면 `.env.local` 추가 후 재시작해야 합니다.
 서버가 연결되면 생성 버튼이 서명된 debug APK를 반환합니다.
-서버 주소를 설정하지 않으면 프로젝트 ZIP을 반환합니다.
+서버 주소를 설정하지 않으면 브라우저에서 APK를 만듭니다.
 
 ### Docker
 

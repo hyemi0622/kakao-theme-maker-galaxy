@@ -47,8 +47,8 @@ export default function App() {
       <h1 className="title">좋아하는 캐릭터로 심플한 카카오톡 테마를 만들어 보세요.</h1>
       <p className="subtitle">갤럭시 / 안드로이드용입니다.</p>
       <div className="guide"><ol>
-        <li>{BUILD_URL ? '테마 설치 파일(.apk) 다운로드' : '프로젝트 ZIP 다운로드 → Android Studio에서 APK 만들기'}</li>
-        <li>갤럭시에 APK 설치</li>
+        <li>테마 설치 파일(.apk) 다운로드</li>
+        <li>다운받은 파일을 눌러 설치 (‘출처를 알 수 없는 앱’ 허용)</li>
         <li>카카오톡 설정 → 테마에서 적용하기</li>
       </ol></div>
       <div className="slots">
@@ -67,9 +67,7 @@ export default function App() {
       {error && <p className="error" role="alert">{error}</p>}
       {result && <DownloadRow filename={result.filename} onDownload={() => {
         downloadBlob(result.blob, result.filename);
-        setSaved(result.filename.endsWith('.apk')
-          ? 'APK를 설치하고 카카오톡 설정 → 테마에서 적용하세요.'
-          : 'ZIP 압축을 풀고 Android Studio로 열어 APK를 만드세요. ZIP 자체는 카카오톡에 적용할 수 없어요.');
+        setSaved('다운받은 APK를 눌러 설치한 뒤 카카오톡 설정 → 테마에서 적용하세요.');
       }} />}
       {saved && <p className="saved" role="status">{saved}</p>}
       <DecoBar />

@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { makeCanvas, toPngBlob } from './imageProcess.js';
 import { bubblePatchBounds, drawNinePatch } from './ninePatch.js';
+import { APK_TYPE, buildApk, getSigningKey } from './apk.js';
 
 export function androidAssetName(name) {
   const base = name.replace(/@3x\.png$|\.png$/g, '');
@@ -21,13 +22,31 @@ export function androidAssetName(name) {
   return null;
 }
 
-export async function addAndroidAssets(assets, name, source, bubble) {
+export async function addAndroidAssets(assets, name, source, bubble, apkImages = null) {
   const mapped = androidAssetName(name);
   if (!mapped) return;
+  const patch = bubble ? bubblePatchBounds(bubble) : null;
   const canvas = bubble
-    ? drawNinePatch(makeCanvas(source.width + 2, source.height + 2), source, bubblePatchBounds(bubble))
+    ? drawNinePatch(makeCanvas(source.width + 2, source.height + 2), source, patch)
     : source;
   assets.set(`src/main/theme/drawable-xxhdpi/${mapped}${bubble ? '.9' : ''}.png`, await toPngBlob(canvas));
+  // APK 에는 테두리 표시 대신 컴파일된 9-patch 정보를 넣으므로 원본 이미지를 따로 보관
+  apkImages?.set(mapped, { png: bubble ? await toPngBlob(source) : assets.get(`src/main/theme/drawable-xxhdpi/${mapped}.png`), patch });
+}
+
+/** 서버 없이 브라우저에서 바로 설치 가능한 APK 만들기 */
+export async function buildApkInBrowser(apkImages) {
+  const base = import.meta.env.BASE_URL;
+  const [template, paths] = await Promise.all([
+    fetch(`${base}theme-template.apk`).then((r) => { if (!r.ok) throw new Error('갤럭시 테마 템플릿을 불러오지 못했어요.'); return r.arrayBuffer(); }),
+    fetch(`${base}theme-template.json`).then((r) => { if (!r.ok) throw new Error('갤럭시 테마 템플릿을 불러오지 못했어요.'); return r.json(); }),
+  ]);
+  const images = new Map();
+  for (const [name, img] of apkImages) images.set(name, { png: new Uint8Array(await img.png.arrayBuffer()), patch: img.patch });
+  let storage = null;
+  try { storage = window.localStorage; } catch { /* 저장소를 못 쓰면 매번 새 키 */ }
+  const apk = await buildApk(new Uint8Array(template), paths, images, await getSigningKey(storage));
+  return new Blob([apk], { type: APK_TYPE });
 }
 
 export async function packageAndroidProject(assets) {

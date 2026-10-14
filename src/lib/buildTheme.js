@@ -12,7 +12,8 @@ import {
 } from './imageProcess.js';
 import { loadDeco, renderBackground } from './deco.js';
 import { renderBubbleCell } from './bubbleCell.js';
-import { addAndroidAssets, packageAndroidProject, requestAndroidApk } from './androidTheme.js';
+import { addAndroidAssets, packageAndroidProject, requestAndroidApk, buildApkInBrowser } from './androidTheme.js';
+import { APK_TYPE } from './apk.js';
 
 /**
  * @param {File} fileA  왼쪽 / 상대방
@@ -24,10 +25,11 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
   let seen = 0;
   const onStep = (msg, p) => { seen = Math.max(seen, p); rawStep(msg, seen); };
   const androidAssets = new Map();
+  const apkImages = new Map();
   const backgrounds = {};
   if (options.background) backgrounds.chatroomBgImage = await loadImage(options.background);
   const storeImage = async (name, canvas, bubble = null) => {
-    await addAndroidAssets(androidAssets, name, canvas, bubble);
+    await addAndroidAssets(androidAssets, name, canvas, bubble, apkImages);
   };
 
   /* ── 1. 누끼 ── */
@@ -107,23 +109,24 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
     }
   }
 
-  onStep('갤럭시 테마 프로젝트 만드는 중…', 0.92);
-  const project = await packageAndroidProject(androidAssets);
   if (options.buildUrl) {
-    onStep('갤럭시 APK 만드는 중… 잠시 기다려 주세요.', 0.96);
-    const blob = await requestAndroidApk(project, options.buildUrl);
+    onStep('갤럭시 APK 만드는 중… 잠시 기다려 주세요.', 0.92);
+    const blob = await requestAndroidApk(await packageAndroidProject(androidAssets), options.buildUrl);
     onStep('완료!', 1);
     return { blob, filename: 'mytheme.apk', manifest: [...androidAssets.keys()] };
   }
+  onStep('갤럭시 APK 만드는 중…', 0.92);
+  const blob = await buildApkInBrowser(apkImages);
   onStep('완료!', 1);
-  return { blob: project, filename: 'mytheme-android.zip', manifest: [...androidAssets.keys()] };
-
+  return { blob, filename: 'mytheme.apk', manifest: [...androidAssets.keys()] };
 }
 
 const OCTET = 'application/octet-stream';
 
-export function downloadBlob(blob, filename = 'mytheme-android.zip') {
-  const safe = blob.type === OCTET ? blob : new Blob([blob], { type: OCTET });
+export function downloadBlob(blob, filename = 'mytheme.apk') {
+  // APK 는 설치 화면이 바로 열리도록 APK 형식 유지
+  const type = filename.endsWith('.apk') ? APK_TYPE : OCTET;
+  const safe = blob.type === type ? blob : new Blob([blob], { type });
   const url = URL.createObjectURL(safe);
   const a = document.createElement('a');
   a.href = url;
