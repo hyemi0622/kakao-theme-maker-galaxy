@@ -123,6 +123,26 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
 
 const OCTET = 'application/octet-stream';
 
+/**
+ * 아이폰 등 공유 시트가 있으면 공유(카톡으로 갤럭시에 보내기),
+ * 공유가 안 되는 브라우저(갤럭시 크롬은 APK 공유 불가)는 바로 다운로드.
+ * 공유 시트는 버튼 탭 직후에만 열리므로 share 전에 await 하지 않는다.
+ */
+export async function saveTheme(blob, filename = 'mytheme.apk') {
+  const file = new File([blob], filename, { type: filename.endsWith('.apk') ? APK_TYPE : OCTET });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return 'shared';
+    } catch (e) {
+      if (e?.name === 'AbortError') return 'cancelled';
+      console.warn('[share] 실패 → 다운로드로 폴백', e);
+    }
+  }
+  downloadBlob(blob, filename);
+  return 'downloaded';
+}
+
 export function downloadBlob(blob, filename = 'mytheme.apk') {
   // APK 는 설치 화면이 바로 열리도록 APK 형식 유지
   const type = filename.endsWith('.apk') ? APK_TYPE : OCTET;

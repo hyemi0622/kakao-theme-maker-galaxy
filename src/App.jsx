@@ -2,7 +2,7 @@ import { useState } from 'react';
 import UploadSlot from './components/UploadSlot.jsx';
 import { DownloadRow } from './components/DownloadRow.jsx';
 import { StarBg, DecoBar } from './components/Deco.jsx';
-import { buildTheme, downloadBlob } from './lib/buildTheme.js';
+import { buildTheme, saveTheme } from './lib/buildTheme.js';
 import { isInAppBrowser, openInExternalBrowser } from './lib/viewport.js';
 import './styles/app.css';
 
@@ -65,9 +65,10 @@ export default function App() {
         <div className="progress-bar"><i style={{ width: `${pct}%` }} /></div>
       </div>}
       {error && <p className="error" role="alert">{error}</p>}
-      {result && <DownloadRow filename={result.filename} onDownload={() => {
-        downloadBlob(result.blob, result.filename);
-        setSaved('다운받은 APK를 눌러 설치한 뒤 카카오톡 설정 → 테마에서 적용하세요.');
+      {result && <DownloadRow filename={result.filename} onDownload={async () => {
+        const how = await saveTheme(result.blob, result.filename);
+        if (how === 'shared') setSaved('공유 완료! 갤럭시에서 받은 APK를 눌러 설치한 뒤 카카오톡 설정 → 테마에서 적용하세요.');
+        else if (how === 'downloaded') setSaved('다운받은 APK를 눌러 설치한 뒤 카카오톡 설정 → 테마에서 적용하세요.');
       }} />}
       {saved && <p className="saved" role="status">{saved}</p>}
       <DecoBar />
