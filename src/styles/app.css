@@ -1,0 +1,287 @@
+/* ==========================================================================
+   반응형 전략  ── "무대(stage) 통째로 확대/축소" 방식
+   ─────────────────────────────────────────────────────────────
+   레이아웃은 시안 그대로 402px 고정으로 그리고,
+   .stage 를 transform: scale(k) 로 통째로 줄인다.  k = 화면폭 / 402
+   
+   왜 이렇게?
+    카카오톡 인앱 브라우저(WKWebView)는 Safari 와 달리
+    "텍스트 자동 확대(text autosizing)" 를 제멋대로 적용해서
+    font-size 기반 스케일링을 쓰면 글자만 커지고 레이아웃이 깨진다.
+    transform 은 렌더링된 결과를 통째로 곱하는 거라
+    어떤 웹뷰에서도 100% 동일하게 나온다.
+   ========================================================================== */
+html {
+  --env-top: env(safe-area-inset-top, 0px);
+  --env-bottom: env(safe-area-inset-bottom, 0px);
+  font-size: 16px;
+  overflow-x: hidden;
+  touch-action: manipulation;   /* 더블탭 확대 차단 */
+}
+
+/* ★ 카카오톡 인앱 브라우저 글자 확대(text autosizing) 차단 ★
+   html 에만 걸면 WKWebView 가 무시하는 경우가 있어서 전 요소에 강제로 건다. */
+*, *::before, *::after {
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* iOS 는 16px 미만 input 에 포커스되면 화면을 강제로 확대한다 → 16px 고정 */
+input, textarea, select, button { font-size: 16px; }
+
+/* 폰트 스택 순서가 핵심:
+   Inter 를 먼저 두면 영문·숫자는 Inter 가 잡고,
+   Inter 에 없는 한글 글리프는 자동으로 다음 순서인 Pretendard 로 넘어간다. */
+body {
+  font-family: 'Inter', 'Pretendard Variable', Pretendard, -apple-system,
+    BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  background: #ffffff;
+  color: #303030;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+  overflow-x: hidden;
+  width: 100%;
+  /* 인앱 브라우저에서 길게 눌렀을 때 뜨는 복사/공유 메뉴 차단 (오작동 유발) */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button { font: inherit; letter-spacing: inherit; border: 0; background: none; cursor: pointer; }
+
+/* ── 무대 (transform 으로 통째 스케일) ────────────────── */
+.viewport {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;   /* ← stretch 되면 높이 계산이 무한루프 */
+}
+.stage {
+  width: 402px;          /* 시안 폭 고정 */
+  flex: none;
+  /* ★ transform 이 아니라 zoom 을 쓰는 이유 ★
+     transform 은 "레이아웃 폭"을 그대로 402px 로 남겨둔다.
+     그러면 iOS 웹뷰가 "이 블록이 화면보다 넓네?" 하고 글자를 자동으로 키운다.
+     zoom 은 레이아웃 폭까지 402*k 로 줄여주기 때문에
+     화면 폭과 정확히 같아져서 글자 자동확대가 아예 발동하지 않는다. */
+  zoom: var(--k, 1);
+}
+
+/* zoom 미지원 브라우저용 폴백 */
+@supports not (zoom: 1) {
+  .stage {
+    zoom: normal;
+    transform-origin: top center;
+    transform: scale(var(--k, 1));
+  }
+}
+
+/* ── 화면 컨테이너 ─────────────────────────────────────── */
+.screen {
+  position: relative;
+  width: 402px;
+  min-height: var(--stage-h, 874px);
+  padding: calc(50px + var(--safe-top, 0px)) 28px
+           calc(70px + var(--safe-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+}
+
+/* 배경 별밭 — 직접 만든 PNG (고정, 스크롤 무관)
+   가로는 화면 폭에 맞추고 세로는 원본 비율 그대로 아래로 반복.
+   → 어떤 아이폰에서도 별이 찌그러지지 않는다. */
+.starbg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-position: top center;
+  background-size: 100% auto;
+  background-repeat: repeat-y;
+}
+.screen > *:not(.starbg) { position: relative; z-index: 1; }
+
+/* ── 헤더 ─────────────────────────────────────────────── */
+.title {
+  width: 305px;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #303030;
+  word-break: keep-all;
+}
+.subtitle {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 16px;
+  color: #666666;
+}
+
+/* ── 안내 박스 ────────────────────────────────────────── */
+.guide {
+  margin-top: 32px;
+  padding: 24px 11px 24px 11px;
+  background: #f5f5f5;
+  border-radius: 5px;
+}
+.guide ol { margin: 0; padding-left: 20px; }
+.guide li {
+  font-size: 13px;
+  line-height: 16px;
+  color: #585858;
+  word-break: keep-all;
+}
+.guide li + li { margin-top: 12px; }
+
+/* ── 업로드 영역 ──────────────────────────────────────── */
+.slots {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 37px;
+}
+.slot { display: flex; flex-direction: column; align-items: center; }
+.slot-chip {
+  width: 72px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: #f5f5f5;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #424242;
+}
+.slot-box {
+  position: relative;
+  margin-top: 11px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 1px dashed #c9c9c9;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.slot-box:active { background: #fafafa; }
+.slot-box span { font-size: 13px; color: #989898; }
+.slot-box img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+.slot-box input { display: none; }
+/* ── 생성하기 버튼 ────────────────────────────────────── */
+.cta {
+  margin-top: 37px;
+  width: 100%;
+  height: 47px;
+  background: #5b5b5b;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  display: grid;
+  place-items: center;
+  transition: opacity 0.15s;
+}
+.cta:disabled { opacity: 0.45; }
+.cta:active:not(:disabled) { opacity: 0.8; }
+
+.progress {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #666666;
+  text-align: center;
+}
+.progress-bar {
+  margin-top: 6px;
+  height: 3px;
+  border-radius: 999px;
+  background: #ececec;
+  overflow: hidden;
+}
+.progress-bar > i {
+  display: block;
+  height: 100%;
+  background: #5b5b5b;
+  transition: width 0.25s;
+}
+
+/* ── 다운로드 행 ──────────────────────────────────────── */
+.dl-row {
+  margin-top: 34px;
+  width: 100%;
+  height: 57px;
+  background: #ffffff;
+  border: 1px solid #d6d6d6;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0 14px;
+}
+.saved {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 16px;
+  color: #53BC72;
+  word-break: keep-all;
+}
+
+.dl-row .fname { flex: 1; font-size: 12px; color: #484848; }
+.dl-ico { width: 25px; height: 21px; flex: none; }
+.dl-btn { width: 20px; height: 20px; flex: none; }
+
+/* ── 하단 데코 아이콘 바 ──────────────────────────────── */
+.decobar {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.deco-ico {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ── 카카오톡 인앱 브라우저 안내 배너 ─────────────────── */
+.inapp {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  background: #FFF6D9;
+  border: 1px solid #F2E2A8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.inapp p { flex: 1; font-size: 12px; line-height: 16px; color: #6B5A18; word-break: keep-all; }
+.inapp button {
+  flex: none;
+  padding: 7px 11px;
+  background: #5b5b5b;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 다크모드에서도 시안 그대로 (테마 앱이므로 라이트 고정) */
+@media (prefers-color-scheme: dark) {
+  body { background: #ffffff; color: #303030; }
+}
+
+.background-slot { margin-top: 28px; }
+.background-slot .slot { width: 150px; margin: 0 auto; }
+.background-slot .slot-chip { width: 88px; }
+.background-slot .slot-box { aspect-ratio: 4 / 3; }
+.background-slot p { font-size: 12px; line-height: 1.6; color: #666; margin-top: 12px; text-align: center; }
+.remove-image { margin-top: 8px; font-size: 12px; text-decoration: underline; color: #666; }
+.error { margin-top: 14px; font-size: 13px; line-height: 1.6; color: #ad3030; }
+button:focus-visible { outline: 2px solid #7b93c6; outline-offset: 3px; }

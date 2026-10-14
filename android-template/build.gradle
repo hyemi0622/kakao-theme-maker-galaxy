@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' version '8.7.2' }
+android {
+    namespace 'com.hyemi.themer.theme'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.hyemi.themer.mycharacter'
+        minSdk 28
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    sourceSets { main { res.srcDirs = ['src/main/res', 'src/main/theme'] } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
