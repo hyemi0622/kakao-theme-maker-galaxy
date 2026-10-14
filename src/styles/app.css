@@ -286,13 +286,14 @@ button { font: inherit; letter-spacing: inherit; border: 0; background: none; cu
 .error { margin-top: 14px; font-size: 13px; line-height: 1.6; color: #ad3030; }
 button:focus-visible { outline: 2px solid #7b93c6; outline-offset: 3px; }
 
-.char-size { margin-top: 28px; }
-.char-size-head { display: flex; align-items: center; justify-content: space-between; }
-.char-size-head .slot-chip { width: 88px; }
-.char-size-head b { font-size: 13px; font-weight: 600; color: #424242; }
-.char-size input { width: 100%; margin-top: 12px; accent-color: #7B93C6; }
-.char-size p { font-size: 12px; line-height: 1.6; color: #666; margin-top: 6px; }
-.bubble-preview { margin-top: 18px; padding: 14px 12px; border: 1px solid #ececec; border-radius: 8px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
-.bubble-preview p { font-size: 12px; color: #666; }
-.bubble-preview img { display: block; max-width: 100%; }
-.bubble-preview img.me { align-self: flex-end; }
+
+/* ── 말풍선 캐릭터 조절 (왼쪽 / 오른쪽 따로) ─────────────── */
+.bubble-controls { margin-top: 28px; display: flex; flex-direction: column; }
+.bubble-controls .slot-chip { width: 128px; }
+.bubble-controls .bubble-preview { margin-top: 11px; min-height: 120px; padding: 12px; border: 1px solid #ececec; border-radius: 8px; background: #fff; display: flex; flex-direction: column; gap: 4px; }
+.bubble-controls .bubble-preview p { font-size: 12px; color: #666; margin-bottom: 6px; }
+.bubble-controls .bubble-preview img { display: block; max-width: 100%; }
+.bubble-controls.right .bubble-preview img { align-self: flex-end; }
+.range-row { margin-top: 12px; display: grid; grid-template-columns: 1fr auto; row-gap: 6px; font-size: 13px; color: #424242; }
+.range-row b { font-weight: 600; }
+.range-row input { grid-column: 1 / -1; width: 100%; accent-color: #7B93C6; }

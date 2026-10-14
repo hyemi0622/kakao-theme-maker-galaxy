@@ -88,16 +88,19 @@ export const CELL02S = {
 /** 캐릭터와 말풍선 사이 가로 간격 (@3x px) */
 export const CHAR_GAP = 5;
 export const CHAR_SCALE = { min: 0.6, max: 1.5, step: 0.05 };
+export const CHAR_GAP_RANGE = { min: 0, max: 30, step: 1 };
 
 /**
- * 캐릭터 크기 배율에 맞춘 말풍선 칸.
- * 캐릭터 박스와 말풍선 시작 높이만 배율만큼 바뀌고, 말풍선 크기와 간격은 그대로.
+ * 왼쪽(받은) / 오른쪽(보낸) 캐릭터 크기 배율과 캐릭터-말풍선 간격에 맞춘 말풍선 칸.
+ * 캐릭터 박스와 말풍선 시작 높이만 배율만큼 바뀌고, 말풍선 크기는 그대로.
  * 02(캐릭터 없는) 칸도 01 과 말풍선 위치를 맞춰야 연속 메시지가 한 줄로 정렬된다.
+ * @param {{scale?:number, gap?:number}} left
+ * @param {{scale?:number, gap?:number}} right
  */
-export function scaledCells(scale = 1) {
-  const cell = (base, plain) => {
+export function scaledCells(left = {}, right = {}) {
+  const cell = (base, plain, { scale = 1, gap = CHAR_GAP } = {}) => {
     const char = { w: Math.round(base.char.w * scale), h: Math.round(base.char.h * scale) };
-    const x = (base.charPad ?? 0) + char.w + CHAR_GAP;
+    const x = (base.charPad ?? 0) + char.w + gap;
     const y = Math.round(base.bubble.y * scale);
     const bubble = { ...base.bubble, x, y };
     return [
@@ -105,8 +108,8 @@ export function scaledCells(scale = 1) {
       { ...plain, w: x + bubble.w, bubble: { ...plain.bubble, x } },
     ];
   };
-  const [CELL01R_, CELL02R_] = cell(CELL01R, CELL02R);
-  const [CELL01S_, CELL02S_] = cell(CELL01S, CELL02S);
+  const [CELL01R_, CELL02R_] = cell(CELL01R, CELL02R, left);
+  const [CELL01S_, CELL02S_] = cell(CELL01S, CELL02S, right);
   return { CELL01R: CELL01R_, CELL02R: CELL02R_, CELL01S: CELL01S_, CELL02S: CELL02S_ };
 }
 

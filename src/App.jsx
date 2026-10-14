@@ -4,7 +4,8 @@ import { DownloadRow } from './components/DownloadRow.jsx';
 import { StarBg, DecoBar } from './components/Deco.jsx';
 import { buildTheme, saveTheme } from './lib/buildTheme.js';
 import { isInAppBrowser, openInExternalBrowser } from './lib/viewport.js';
-import { CHAR_SCALE } from './constants/themeSpec.js';
+import { CHAR_GAP } from './constants/themeSpec.js';
+import BubbleControls from './components/BubbleControls.jsx';
 import './styles/app.css';
 
 const INAPP = isInAppBrowser();
@@ -14,7 +15,7 @@ export default function App() {
   const [fileA, setFileA] = useState(null);
   const [fileB, setFileB] = useState(null);
   const [background, setBackground] = useState(null);
-  const [charScale, setCharScale] = useState(1);
+  const [char, setChar] = useState({ left: { scale: 1, gap: CHAR_GAP }, right: { scale: 1, gap: CHAR_GAP } });
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState('');
   const [pct, setPct] = useState(0);
@@ -30,14 +31,14 @@ export default function App() {
   const timer = useRef(null);
 
   // 캐릭터 크기만 바꿔 다시 만들 때는 이전 결과(미리보기)를 띄워둔 채로 교체한다
-  const generate = async (scale = charScale) => {
+  const generate = async (c = char) => {
     if (!fileA || !fileB) return;
     const id = ++run.current;
     setBusy(true); setSaved(''); setError(''); setPct(0);
     try {
       const next = await buildTheme(fileA, fileB, (msg, p) => {
         if (id === run.current) { setStep(msg); setPct(Math.round(p * 100)); }
-      }, { background, charScale: scale, buildUrl: BUILD_URL });
+      }, { background, left: c.left, right: c.right, buildUrl: BUILD_URL });
       if (id === run.current) setResult(next);
     } catch (e) {
       console.error(e);
@@ -45,11 +46,13 @@ export default function App() {
     } finally { if (id === run.current) setBusy(false); }
   };
 
-  const changeScale = (value) => {
-    setCharScale(value);
-    if (!result) return;                       // 아직 생성 전이면 값만 바꿔둔다
+  // 크기/간격을 바꾸면 (이미 생성했을 때만) 잠깐 뒤 자동으로 다시 만든다
+  const changeChar = (side, value) => {
+    const next = { ...char, [side]: value };
+    setChar(next);
+    if (!result) return;
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => generate(value), 350);
+    timer.current = setTimeout(() => generate(next), 350);
   };
 
   return (
@@ -74,23 +77,11 @@ export default function App() {
         <UploadSlot label="배경화면" removable disabled={busy} onPick={pick(setBackground)} />
         <p>선택한 사진을 채팅방 배경으로 넣어요. 비워두면 기존 별 배경을 사용해요.</p>
       </div>
-      <div className="char-size">
-        <div className="char-size-head">
-          <span className="slot-chip">캐릭터 크기</span>
-          <b>{Math.round(charScale * 100)}%</b>
-        </div>
-        <input type="range" aria-label="말풍선 캐릭터 크기"
-          min={CHAR_SCALE.min} max={CHAR_SCALE.max} step={CHAR_SCALE.step} value={charScale}
-          onChange={(e) => changeScale(Number(e.target.value))} />
-        <p>말풍선 옆 캐릭터 크기예요. 생성한 뒤에 움직이면 미리보기가 바로 바뀌어요.</p>
-        {result?.preview && <div className="bubble-preview">
-          <p>미리보기 (실제 갤럭시 화면 크기)</p>
-          {[['you', '받은 말풍선'], ['me', '보낸 말풍선']].map(([side, alt]) => (
-            <img key={side} className={side} src={result.preview[side]} alt={alt}
-              onLoad={(e) => { e.currentTarget.style.width = `${e.currentTarget.naturalWidth / 3}px`; }} />
-          ))}
-        </div>}
-      </div>
+      <BubbleControls side="left" label="왼쪽 말풍선 캐릭터" file={fileA} device="갤럭시"
+        value={char.left} onChange={(v) => changeChar('left', v)} />
+      <BubbleControls side="right" label="오른쪽 말풍선 캐릭터" file={fileB} device="갤럭시"
+        value={char.right} onChange={(v) => changeChar('right', v)} />
+
       <button className="cta" disabled={!ready} onClick={() => generate()}>{busy ? '만드는 중…' : '생성하기'}</button>
       {busy && <div role="status" aria-live="polite">
         <div className="progress">{step} {pct}%</div>

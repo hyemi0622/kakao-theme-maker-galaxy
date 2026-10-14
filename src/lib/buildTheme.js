@@ -8,23 +8,13 @@ import {
   BUBBLE_SLOTS, BUBBLE_ART, scaledCells,
 } from '../constants/themeSpec.js';
 import {
-  buildMaster, renderToSlot, loadImage, makeCanvas, toPngBlob,
+  renderToSlot, loadImage, makeCanvas,
 } from './imageProcess.js';
 import { loadDeco, renderBackground } from './deco.js';
 import { renderBubbleCell } from './bubbleCell.js';
+import { cachedMaster } from './charPreview.js';
 import { addAndroidAssets, packageAndroidProject, requestAndroidApk, buildApkInBrowser } from './androidTheme.js';
 import { APK_TYPE } from './apk.js';
-
-// 같은 사진으로 캐릭터 크기만 바꿔 다시 만들 때 배경 제거를 건너뛴다
-const masterCache = new WeakMap();
-function cachedMaster(file, onProgress) {
-  if (!masterCache.has(file)) {
-    const job = buildMaster(file, onProgress);
-    job.catch(() => masterCache.delete(file));
-    masterCache.set(file, job);
-  }
-  return masterCache.get(file);
-}
 
 /**
  * @param {File} fileA  왼쪽 / 상대방
@@ -37,7 +27,6 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
   const onStep = (msg, p) => { seen = Math.max(seen, p); rawStep(msg, seen); };
   const androidAssets = new Map();
   const apkImages = new Map();
-  const preview = {};   // 화면에 보여줄 캐릭터 말풍선 (@3x)
   const backgrounds = {};
   if (options.background) backgrounds.chatroomBgImage = await loadImage(options.background);
   const storeImage = async (name, canvas, bubble = null) => {
@@ -101,7 +90,7 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
     for (const [k, v] of Object.entries(BUBBLE_ART)) {
       arts[k] = await loadImage(import.meta.env.BASE_URL + v);
     }
-    const CELLS = scaledCells(options.charScale ?? 1);
+    const CELLS = scaledCells(options.left, options.right);
     for (const b of BUBBLE_SLOTS) {
       const L = CELLS[b.cell];
       const c = renderBubbleCell({
@@ -118,8 +107,6 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
       }
       const name = `${b.name}@3x.png`;
       await storeImage(name, c, { side: b.side, L });
-      if (b.name === 'chatroomBubbleReceive01') preview.you = URL.createObjectURL(await toPngBlob(c));
-      if (b.name === 'chatroomBubbleSend01') preview.me = URL.createObjectURL(await toPngBlob(c));
     }
   }
 
@@ -127,12 +114,12 @@ export async function buildTheme(fileA, fileB, rawStep = () => {}, options = {})
     onStep('갤럭시 APK 만드는 중… 잠시 기다려 주세요.', 0.92);
     const blob = await requestAndroidApk(await packageAndroidProject(androidAssets), options.buildUrl);
     onStep('완료!', 1);
-    return { blob, filename: 'mytheme.apk', preview, manifest: [...androidAssets.keys()] };
+    return { blob, filename: 'mytheme.apk', manifest: [...androidAssets.keys()] };
   }
   onStep('갤럭시 APK 만드는 중…', 0.92);
   const blob = await buildApkInBrowser(apkImages);
   onStep('완료!', 1);
-  return { blob, filename: 'mytheme.apk', preview, manifest: [...androidAssets.keys()] };
+  return { blob, filename: 'mytheme.apk', manifest: [...androidAssets.keys()] };
 }
 
 const OCTET = 'application/octet-stream';
