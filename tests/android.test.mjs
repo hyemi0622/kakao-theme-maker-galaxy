@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import JSZip from 'jszip';
 import { androidAssetName } from '../src/lib/androidTheme.js';
 import { bubblePatchBounds } from '../src/lib/ninePatch.js';
-import { CELL01R, CELL02R, CELL01S, CELL02S, SLOTS, BG_SLOTS, BUBBLE_SLOTS } from '../src/constants/themeSpec.js';
+import { CELL01R, CELL02R, CELL01S, CELL02S, SLOTS, BG_SLOTS, BUBBLE_SLOTS, scaledCells, CHAR_SCALE, CHAR_GAP } from '../src/constants/themeSpec.js';
 import { validatedImages, createBuildServer } from '../server/android-build.mjs';
 import { readFileSync } from 'node:fs';
 import { buildApk, getSigningKey, readZip, THEME_IMAGES } from '../src/lib/apk.js';
@@ -87,4 +87,17 @@ test('browser APK swaps theme images, aligns stored files, and adds a v2 signatu
   for (const e of entries) if (e.method === 0) assert.equal(e.data.byteOffset % 4, 0, e.name);
   assert.ok(Buffer.from(apk).includes('APK Sig Block 42'));
   await assert.rejects(buildApk(template, paths, new Map([['nope', { png }]]), null), /없는 이미지/);
+});
+
+test('character size slider keeps bubbles aligned and stretchable at every size', () => {
+  assert.deepEqual(scaledCells(1), { CELL01R, CELL02R, CELL01S, CELL02S });
+  for (let s = CHAR_SCALE.min; s <= CHAR_SCALE.max + 1e-9; s += CHAR_SCALE.step) {
+    const c = scaledCells(s);
+    for (const [side, L] of [['left', c.CELL01R], ['left', c.CELL02R], ['right', c.CELL01S], ['right', c.CELL02S]]) {
+      assert.doesNotThrow(() => bubblePatchBounds({ side, L }), `scale ${s}`);
+    }
+    assert.equal(c.CELL01R.bubble.x, c.CELL02R.bubble.x);
+    assert.equal(c.CELL01S.bubble.x, c.CELL02S.bubble.x);
+    assert.equal(c.CELL01R.bubble.x - c.CELL01R.char.w, CHAR_GAP);
+  }
 });

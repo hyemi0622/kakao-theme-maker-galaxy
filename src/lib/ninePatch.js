@@ -4,7 +4,7 @@ export function bubblePatchBounds({ L, side }) {
   const { w, h, x, y } = L.bubble;
   const bx = side === 'left' ? x : L.w - w - x;
   // 갤럭시 카톡은 글자 줄 높이가 커서 위아래 여백을 좌우보다 작게 둔다 (아이폰과 비슷한 높이)
-  const padX = 24, padY = 18;
+  const padX = 20, padY = 18;
   const content = { left: bx + padX, top: y + padY,
     right: bx + w - padX, bottom: y + h - padY };
   const stretch = { x: bx + Math.floor(w / 2), y: y + Math.floor(h / 2) };
