@@ -40,8 +40,8 @@
     <color name="theme_chatroom_unread_count_color">#7B93C6</color>
     <color name="theme_chatroom_input_bar_color">#222222</color>
     <color name="theme_chatroom_input_bar_background_color">#FFFFFF</color>
-    <color name="theme_chatroom_input_bar_menu_icon_color">#222222</color>
-    <color name="theme_chatroom_input_bar_menu_button_color">#222222</color>
+    <color name="theme_chatroom_input_bar_menu_icon_color">#666666</color>
+    <color name="theme_chatroom_input_bar_menu_button_color">#FFFFFF</color>
     <color name="theme_chatroom_input_bar_send_icon_color">#FFFFFF</color>
     <color name="theme_chatroom_input_bar_send_button_color">#7B93C6</color>
 </resources>

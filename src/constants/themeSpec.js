@@ -58,31 +58,31 @@ export const BG_SLOTS = [
      (이전엔 01=130 / 02=113 으로 축소율이 달라서 02 만 얇고 뭉개졌다)
 
    [캐릭터-말풍선 간격]
-     간격 = bubble.x - (charPad + char.w) = 144 - (16 + 118) = 10px
+     간격 = bubble.x - (charPad + char.w) = 135 - (6 + 118) = 11px
      send 쪽은 좌우 반전이라 자동으로 같은 10px 이 적용된다. */
 /* 받은 쪽 — 캐릭터 작게 */
 /* 받은 쪽 */
 export const CELL01R = {
-  w: 202, h: 206,
+  w: 211, h: 206,
   char: { w: 100, h: 116 },
   charPad: 0,
-  bubble: { w: 100, h: 98, y: 108, x: 102 },   // 간격 2px, y 117 → 108
+  bubble: { w: 100, h: 98, y: 108, x: 111 },   // 캐릭터와 간격 11px (갤럭시는 2px 이면 붙어 보임)
 };
 export const CELL02R = {
-  w: 202, h: 98, char: null,
-  bubble: { w: 100, h: 98, y: 0, x: 102 },
+  w: 211, h: 98, char: null,
+  bubble: { w: 100, h: 98, y: 0, x: 111 },
 };
 
 /* 보낸 쪽 */
 export const CELL01S = {
-  w: 226, h: 206,
+  w: 235, h: 206,
   char: { w: 118, h: 138 },
   charPad: 6,
-  bubble: { w: 100, h: 98, y: 108, x: 126 },   // 간격 2px, y 117 → 108
+  bubble: { w: 100, h: 98, y: 108, x: 135 },   // 캐릭터와 간격 11px
 };
 export const CELL02S = {
-  w: 226, h: 98, char: null,
-  bubble: { w: 100, h: 98, y: 0, x: 126 },
+  w: 235, h: 98, char: null,
+  bubble: { w: 100, h: 98, y: 0, x: 135 },
 };
 
 /* 순서는 (capLeft, capTop). insets 는 top left bottom right. 전부 1배수 pt */

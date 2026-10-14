@@ -3,9 +3,10 @@
 export function bubblePatchBounds({ L, side }) {
   const { w, h, x, y } = L.bubble;
   const bx = side === 'left' ? x : L.w - w - x;
-  const pad = 24;
-  const content = { left: bx + pad, top: y + pad,
-    right: bx + w - pad, bottom: y + h - pad };
+  // 갤럭시 카톡은 글자 줄 높이가 커서 위아래 여백을 좌우보다 작게 둔다 (아이폰과 비슷한 높이)
+  const padX = 24, padY = 12;
+  const content = { left: bx + padX, top: y + padY,
+    right: bx + w - padX, bottom: y + h - padY };
   const stretch = { x: bx + Math.floor(w / 2), y: y + Math.floor(h / 2) };
   if (L.char && stretch.y <= L.char.h) {
     throw new Error('말풍선 늘어나는 영역이 캐릭터와 겹칩니다.');
